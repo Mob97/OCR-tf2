@@ -1,7 +1,7 @@
+import sys
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = '0'
+import argparse
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
-
 import anyconfig
 import munch
 import numpy as np
@@ -32,7 +32,7 @@ class Trainer:
         self.train_loss_avg = tf.keras.metrics.Mean("train_loss_avg")
         self.val_loss_avg = tf.keras.metrics.Mean("val_loss_avg")
         self.converter = CTCLabelConverter(cfg.character)
-        self.num_class = len(converter.character)
+        self.num_class = len(self.converter.character)
         self.model = OcrModel(cfg, self.num_class)
         
         self.loss_func = tf.nn.ctc_loss
@@ -168,7 +168,7 @@ class Trainer:
 
 def parse_args(argv):
 	parser = argparse.ArgumentParser(description='Train face network')
-	parser.add_argument('--config_path', type=str, help='path to config path', default='configs/config_momo.yaml')
+	parser.add_argument('--config_path', type=str, help='path to config path', default='configs/config_base.yaml')
 	parser.add_argument('--gpu', type=str, help='choose gpu (0,1,2,...) or cpu(-1)', default='0')
 	args = parser.parse_args(argv)
 
@@ -176,11 +176,11 @@ def parse_args(argv):
 
 if __name__ == "__main__":
     args = parse_args(sys.argv[1:])
-	os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
+    os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
     cfg = anyconfig.load(args.config_path)
-	cfg.update(vars(args))
+    cfg.update(vars(args))
     cfg = munch.munchify(cfg)
-    
+
     train = Trainer(cfg)
     train.train()
 
