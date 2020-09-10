@@ -1,0 +1,33 @@
+rgb: False
+character: 0123456789abcdefghijklmnopqrstuvwxyz
+batch_size: 32
+num_step: 1000000
+num_iters_4_valid: 1000
+model_name: 'ResNet-BiLSTM-CTC_on_ST-MJ'
+saved_models_path: "saved_models"
+learning_rate: 0.001
+
+Transformation: None
+FeatureExtraction: ResNet
+SequenceModeling: BiLSTM
+Prediction: CTC
+
+train_data: /hdd/DATA/base_ocr_dataset/data_lmdb_release/training
+valid_data: /hdd/DATA/base_ocr_dataset/data_lmdb_release/validation/
+select_train_data: ST-MJ
+batch_ratio_train: 0.5-0.5
+select_val_data: VAL
+batch_ratio_val: '1'
+workers: 16
+PAD: True
+data_filtering_off: False
+sensitive: False
+
+imgH: 32
+imgW: 100
+
+batch_max_length: 25
+feature_extraction:
+  output_channel: 512
+sequence_modeling:
+  hidden_size: 256
