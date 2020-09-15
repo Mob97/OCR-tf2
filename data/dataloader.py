@@ -7,20 +7,24 @@ import numpy as np
 
 
 class Batch_Balanced_Dataset(object):
-    def __init__(self, config, train=True):               
+    def __init__(self, config, type_data='train'):               
         self.data_loader_list = []
         self.batch_size_list = []
-        
-        if train:
-            type_data = 'train'
+        self.nSamples = 0
+        if type_data == 'train':
             data_path = config.train_data
             select_data = config.select_train_data.split('-')
             batch_ratio = config.batch_ratio_train.split('-')    
-        else:
-            type_data = 'valid'
+        elif type_data == 'valid':
             data_path = config.valid_data
             select_data = config.select_val_data.split('-')
             batch_ratio = config.batch_ratio_val.split('-')    
+        elif type_data == 'eval':
+            data_path = config.eval_data
+            select_data = config.select_val_data.split('-')
+            batch_ratio = config.batch_ratio_val.split('-')
+        else:
+            raise Exception("type_data must be \"train\" or \"valid\" or \"eval\" ")
         ###LOG
         self.log_content = '-' * 80 + '\n'
         self.log_content += f'dataset_root: {data_path}\nselect_data: {select_data}\nbatch_ratio: {batch_ratio}\n'
@@ -29,8 +33,13 @@ class Batch_Balanced_Dataset(object):
             dataLoader = DataLoader(data_path, selected_d, config, type_data)
             self.data_loader_list.append(dataLoader)
             self.batch_size_list.append(batch_size)
+            self.nSamples += dataLoader.dataset.nSamples
             self.log_content += f'num total samples of {selected_d}({type_data}): {dataLoader.dataset.nSamples}\n'
         self.log_content += '-' * 80 + '\n'
+        print(self.log_content)
+
+    def __len__(self):
+        return self.nSamples
 
     def get_data_information(self):
         return self.log_content
@@ -63,13 +72,16 @@ class DataLoader():
             batch_size=self.config.batch_size
         samples = []
         labels = []
-        numSamples = self.dataset.nSamples
-
-        if self.type_data == 'train' and (self.pointer + 1) * batch_size >= self.dataset.nSamples:
+        
+        if (self.pointer + 1) * batch_size >= self.dataset.nSamples:
             self.pointer = 0            
-            random.shuffle(self.data_index)
-        upper = min((self.pointer + 1) * batch_size, self.dataset.nSamples - 1)
-        batch_indexes = self.data_index[self.pointer * batch_size: upper]
+            if self.type_data == "train":
+                random.shuffle(self.data_index)
+            else:
+                return None, None
+
+        self.upper = min((self.pointer + 1) * batch_size, self.dataset.nSamples - 1)
+        batch_indexes = self.data_index[self.pointer * batch_size: self.upper]
         self.pointer += 1
 
         batch = [self.dataset[x] for x in batch_indexes]
