@@ -73,14 +73,14 @@ class DataLoader():
         samples = []
         labels = []
         
-        if (self.pointer + 1) * batch_size >= self.dataset.nSamples:
+        if self.pointer * batch_size >= self.dataset.nSamples:
             self.pointer = 0            
             if self.type_data == "train":
                 random.shuffle(self.data_index)
             else:
                 return None, None
 
-        self.upper = min((self.pointer + 1) * batch_size, self.dataset.nSamples - 1)
+        self.upper = min((self.pointer + 1) * batch_size, self.dataset.nSamples)
         batch_indexes = self.data_index[self.pointer * batch_size: self.upper]
         self.pointer += 1
 
