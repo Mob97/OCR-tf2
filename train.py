@@ -44,11 +44,9 @@ class Trainer:
         for k, v in cfg.items():
             config_log += f'{str(k)}: {str(v)}\n'
 
-        
-
         lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(
             cfg.learning_rate,
-            decay_steps=10000,
+            decay_steps=1000,
             decay_rate=0.96,
             staircase=True)
 
@@ -67,20 +65,34 @@ class Trainer:
         self.best_model_dir = os.path.join(model_path, "best")
         if not os.path.exists(self.best_model_dir):
             os.makedirs(self.best_model_dir)
+        opt = {}
+        if self.cfg.load_FeatureExtraction:
+            opt["feature_extraction"] = self.model.feature_extraction
+        if self.cfg.load_SequenceModeling:
+            opt["sequence_modeling"] = self.model.sequence_modeling
+        if self.cfg.load_Prediction:
+            opt["decoder"] = self.model.decoder
+        if self.cfg.load_Optimizer:
+            opt["optimizer"] = self.optimizer
 
-        checkpoint = tf.train.Checkpoint(
-            feature_extraction=self.model.feature_extraction,
-            sequence_modeling=self.model.sequence_modeling,
-            decoder=self.model.decoder,
-            optimizer=self.optimizer
-        )
+        # checkpoint = tf.train.Checkpoint(
+        #     feature_extraction=self.model.feature_extraction,
+        #     sequence_modeling=self.model.sequence_modeling,
+        #     decoder=self.model.decoder,
+        #     optimizer=self.optimizer
+        # )
+
+        checkpoint = tf.train.Checkpoint(**opt)
 
         self.ckpt_manager = tf.train.CheckpointManager(checkpoint=checkpoint, 
                                                         directory=checkpoint_dir, 
                                                         max_to_keep=2, 
                                                         checkpoint_name='ocr_model'
                                                         )
-        if self.ckpt_manager.latest_checkpoint:
+        if self.cfg.pretrained_model:
+            checkpoint.restore(self.cfg.pretrained_model).expect_partial()
+            print("Restored from {}".format(self.cfg.pretrained_model))
+        elif self.ckpt_manager.latest_checkpoint:
             checkpoint.restore(self.ckpt_manager.latest_checkpoint).expect_partial()
             print("Restored from {}".format(self.ckpt_manager.latest_checkpoint))
         else:
@@ -152,10 +164,10 @@ class Trainer:
                 log_content += f'{"Ground Truth":25s} | {"Prediction":25s} | Confidence Score & T/F\n'
                 log_content += '-' * 80 + '\n'
                 self.val_loss_avg.reset_states()
-                while total < len(self.valid_dataset) - 1:    
-                                    
+                while True:                                        
                     val_images, val_labels = self.valid_dataset.get_batch()  
-
+                    if val_images is None or val_labels is None:
+                        break
                     val_text, _ = self.converter.encode(val_labels, batch_max_length=cfg.batch_max_length)
                     indices, values, dense_shape = sparse_tuple_from(val_text)
                     sparse_labels = tf.sparse.SparseTensor(indices=indices, values=values, dense_shape=dense_shape)

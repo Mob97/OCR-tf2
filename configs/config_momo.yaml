@@ -2,13 +2,21 @@ rgb: False
 character: 0123456789
 batch_size: 64
 num_step: 1000000
-num_iters_4_valid: 10
+num_iters_4_valid: 500
 model_name: 'momo-id-card'
 saved_models_path: "saved_models"
-learning_rate: 0.000001
+learning_rate: 0.0001
 nSample_2_show: 8
 
-Transformation: None
+pretrained_model: saved_models/momo-id-card/checkpoints/ocr_model-385
+
+load_Transformation: False
+load_FeatureExtraction: True
+load_SequenceModeling: True
+load_Prediction: False
+load_Optimizer: False
+
+Transformation: 
 FeatureExtraction: ResNet
 SequenceModeling: BiLSTM
 Prediction: CTC

@@ -49,8 +49,12 @@ class Batch_Balanced_Dataset(object):
         label_list = []
         for data_loader, batch_size in zip(self.data_loader_list, self.batch_size_list):
             image, label = data_loader.get_batch(batch_size)
+            if image is None or label is None:
+                continue
             image_list.append(image)
             label_list = label_list + list(label)
+        if len(label_list) == 0:
+            return None, None
         return np.concatenate(image_list, axis=0), tuple(label_list)
 
 class DataLoader():
@@ -146,9 +150,6 @@ class AlignCollate():
 
                 resized_image = image.resize((resized_w, self.imgH), Image.BICUBIC)
                 resized_images.append(transform(resized_image))
-                # resized_image.save('./image_test/%d_test.jpg' % w)
-
-            # batch_img = torch.cat([t.unsqueeze(0) for t in resized_images], 0)
             batch_img = np.concatenate([np.expand_dims(t, 0) for t in resized_images], 0)
         else:
             transform = ResizeNormalize((self.imgW, self.imgH))
